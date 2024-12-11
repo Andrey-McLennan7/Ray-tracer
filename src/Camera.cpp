@@ -3,12 +3,12 @@
 
 #include <GLM/gtc/matrix_transform.hpp>
 
-Camera::Camera(const glm::ivec2& winSize) :
-	m_projection{ glm::mat4(1.0f) },
-	m_view{ glm::mat4(1.0f) }
+Camera::Camera(const glm::ivec2& winSize, float fov, const glm::vec3& position) :
+	m_projection{ glm::mat4(1.0f) }, m_view{ glm::mat4(1.0f) },
+	m_position{ position }, m_fov{ fov }
 {
-	this->m_projection = glm::perspective(glm::radians(45.0f), (float)winSize.x / (float)winSize.y, 0.1f, 100.0f);
-	this->m_view = glm::translate(this->m_view, glm::vec3(0.0f, 0.5f, -1.0f));
+	this->m_projection = glm::perspective(glm::radians(fov), (float)winSize.x / (float)winSize.y, 0.1f, 100.0f);
+	this->m_view = glm::translate(this->m_view, position);
 }
 
 Ray Camera::GetRay(const glm::vec2& pixelPos, const glm::ivec2& winSize)
@@ -51,4 +51,24 @@ Ray Camera::GetRay(const glm::vec2& pixelPos, const glm::ivec2& winSize)
 	ray.m_direction = glm::normalize(far_point - near_point);
 
 	return ray;
+}
+
+void Camera::position(const glm::vec3& position)
+{
+	this->m_position = position;
+}
+
+glm::vec3 Camera::position() const
+{
+	return this->m_position;
+}
+
+void Camera::FOV(float fov)
+{
+	this->m_fov = fov;
+}
+
+float Camera::FOV() const
+{
+	return this->m_fov;
 }

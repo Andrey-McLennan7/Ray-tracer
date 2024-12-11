@@ -63,8 +63,8 @@ int main()
 	// Ray tracer
 	RayTracer ray_tracer;
 
-	//add_objects(&ray_tracer);
-	CPU_overload_test(&ray_tracer);
+	add_objects(&ray_tracer);
+	//CPU_overload_test(&ray_tracer);
 
 	// This will handle rendering to screen
 	GCP_Framework framework;
@@ -76,7 +76,7 @@ int main()
 	}
 	
 	// Camera
-	Camera camera(win_size);
+	Camera camera(win_size, 90.0f);
 
 	Cache cache
 	{
@@ -273,13 +273,13 @@ void add_objects(RayTracer* ray_tracer)
 	thread_calculator();
 
 	// Enable shadows
-	ray_tracer->enable_shadows(false);
+	ray_tracer->enable_shadows(true);
 
 	// Create poit lights
 	std::vector<std::shared_ptr<PointLight>> point_lights;
 
-	point_lights.push_back(std::make_shared<PointLight>(1.0f, glm::vec3{ 1.0f, 1.0f, 1.0f }));
-	point_lights.push_back(std::make_shared<PointLight>(0.5f, glm::vec3{ -1.0f, 1.0f, 1.0f }));
+	point_lights.push_back(std::make_shared<PointLight>(1.0f, glm::vec3{ 0.0f, 1.0f, 1.0f }));
+	point_lights.push_back(std::make_shared<PointLight>(0.5f, glm::vec3{ 0.0f, 1.0f, -1.0f }));
 
 	// Add point lights to the scene
 	std::vector<std::shared_ptr<PointLight>>::const_iterator itr;
@@ -290,11 +290,20 @@ void add_objects(RayTracer* ray_tracer)
 
 	// Create sphere object(s)
 	//std::shared_ptr<Sphere> red_sphere{ std::make_shared<Sphere>(0.5f, glm::vec3{ 0.0f, -0.5f, -1.0f }, std::make_shared<PBR>(0.5f, 1.0f, 0.5f, glm::vec3{ 0.8f, 0.2f, 0.1f })) };
-	std::shared_ptr<Sphere> red_sphere{ std::make_shared<Sphere>(0.5f, glm::vec3{ 0.0f, -0.5f, -1.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere1{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.7f,  0.0f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere2{ std::make_shared<Sphere>(0.5f, glm::vec3{ -0.7f,  0.0f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere3{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f,  0.7f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere4{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f, -0.7f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
 
-	red_sphere->add_material(std::make_shared<Specular>(50.0f));
+	sphere1->add_material(std::make_shared<Specular>(50.0f));
+	sphere2->add_material(std::make_shared<Specular>(50.0f));
+	sphere3->add_material(std::make_shared<Specular>(50.0f));
+	sphere4->add_material(std::make_shared<Specular>(50.0f));
 
-	ray_tracer->add_object(red_sphere);
+	ray_tracer->add_object(sphere1);
+	ray_tracer->add_object(sphere2);
+	ray_tracer->add_object(sphere3);
+	ray_tracer->add_object(sphere4);
 
 	// Add a plane
 	ray_tracer->add_object(std::make_shared<Plane>(glm::vec3{ 0.0f, -1.0f, 0.0f }, glm::vec3{ 0.0f, 1.0f, 0.0f }, std::make_shared<Diffuse>(glm::vec3{ 0.75f })));
