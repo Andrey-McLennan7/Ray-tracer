@@ -1,3 +1,4 @@
+// Project headers
 #include "GCP_GFX_Framework.h"
 #include "RayTracer.h"
 #include "Sphere.h"
@@ -8,14 +9,17 @@
 #include "PBR.h"
 #include "Ray.h"
 
+// Utility funcitions headers
 #include "random_floats.h"
 
+// Standard library headers
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <chrono>
 #include <fstream>
 #include <ctime>
+#include <exception>
 
 #ifdef _DEBUG
 bool debug = true;
@@ -34,10 +38,108 @@ struct Cache
 	Camera* camera;
 };
 
+// Set window size
+glm::ivec2 win_size(1240, 720);
+
+// Set threads
 unsigned int num_threads{ 6 };
 
 // Utility functions
-void RTrenderer(Cache cache)
+void rt_renderer(Cache cache);
+
+void CPU_overload_test(RayTracer* ray_tracer);
+void add_objects(RayTracer* ray_tracer);
+
+void thread_calculator();
+void calculate_and_store_time(std::ofstream& file, const std::string& fileName,
+							  const std::chrono::steady_clock::time_point& time1,
+							  const std::chrono::steady_clock::time_point& time2);
+
+#undef main
+int main()
+{
+	srand(time(NULL));
+
+	// Ray tracer
+	RayTracer ray_tracer;
+
+	//add_objects(&ray_tracer);
+	CPU_overload_test(&ray_tracer);
+
+	// This will handle rendering to screen
+	GCP_Framework framework;
+
+	// Initialises SDL and OpenGL and sets up a framebuffer
+	if (!framework.Init(win_size))
+	{
+		return -1;
+	}
+	
+	// Camera
+	Camera camera(win_size);
+
+	Cache cache
+	{
+		win_size,
+		glm::ivec2{ 0, 0 },
+		glm::ivec2{ win_size.x, win_size.y / num_threads },
+
+		&framework,
+		&ray_tracer,
+		&camera
+	};
+
+	std::vector<std::thread> threads;
+
+	// ---------------------------------Start timer------------------------------------------
+	std::chrono::steady_clock::time_point time1{ std::chrono::high_resolution_clock::now() };
+
+	for (unsigned int i{ 0 }; i < num_threads; ++i)
+	{
+		threads.push_back(std::thread(rt_renderer, cache));
+
+		cache.start.y = cache.end.y;
+		cache.end.y += win_size.y / num_threads;
+	}
+
+	std::vector<std::thread>::iterator itr;
+	for (itr = threads.begin(); itr != threads.end(); ++itr)
+	{
+		itr->join();
+	}
+
+	std::chrono::steady_clock::time_point time2{ std::chrono::high_resolution_clock::now() };
+	// ---------------------------------End timer--------------------------------------------
+
+	std::ofstream file;
+
+	// Check if the compiler is in debug mode
+	// 
+	// Since it takes longer to run a program when it is in debug mode
+	// it would be very useful to ensure that there are two different
+	// files that store the amount of time it has taken to output a
+	// single frame to the screen. This can help determine the optimal
+	// amount of threads needed to output an image
+	//
+	if (debug)
+	{
+		// If it is, then redirect the location in the debug file
+		calculate_and_store_time(file, "../res/Measurements/Debug/data-" + std::to_string(win_size.x) + "x" + std::to_string(win_size.y) + ".csv", time1, time2);
+	}
+	else
+	{
+		// If it is NOT, then redirect the location in the release file
+		calculate_and_store_time(file, "../res/Measurements/Release/data-" + std::to_string(win_size.x) + "x" + std::to_string(win_size.y) + ".csv", time1, time2);
+	}
+
+	// Pushes the framebuffer to OpenGL and renders to screen
+	// Also contains an event loop that keeps the window going until it's closed
+	framework.ShowAndHold();
+
+	return 0;
+}
+
+void rt_renderer(Cache cache)
 {
 	// Iterate through every x coordinate
 	for (int x{ cache.start.x }; x < cache.end.x; ++x)
@@ -64,34 +166,51 @@ void RTrenderer(Cache cache)
 	}
 }
 
-void calculate_and_store_time(std::ofstream& file, const std::string& fileName, const std::chrono::steady_clock::time_point& time1, const std::chrono::steady_clock::time_point& time2)
-{
-	// Calculate amount of time in milliseconds
-	std::chrono::milliseconds milliseconds{ std::chrono::duration_cast<std::chrono::milliseconds>(time2 - time1) };
-
-	// Calculate in seconds
-	float seconds{ (float)milliseconds.count() / 1000.0f };
-
-	// Print amount of time
-	std::cout << "\nTime taken: " << seconds << " seconds\n" << std::endl;
-
-	// Open/Create CSV file than can append data
-	file.open(fileName, std::ofstream::out | std::ofstream::app);
-
-	file.seekp(0, std::ios::end);
-
-	if (file.tellp() == 0)
-	{
-		file << "Threads, Seconds\n";
-	}
-
-	file << num_threads << ',' << seconds << '\n';
-	file.close();
-}
-
 void CPU_overload_test(RayTracer* ray_tracer)
 {
-	ray_tracer->enable_shadows(false);
+	std::cout << "1. 1366x768" << std::endl;
+	std::cout << "2. 1920x1080" << std::endl;
+	std::cout << "3. 2560x1440" << std::endl;
+	std::cout << "4. 3840x2160" << std::endl;
+
+	int choice{ 0 };
+
+	std::cout << "\nResolution:> ";
+	std::cin >> choice;
+	
+	switch (choice)
+	{
+	case 1:
+
+		win_size = glm::ivec2{ 1366, 768 };
+		break;
+
+	case 2:
+
+		win_size = glm::ivec2{ 1920, 1080 };
+		break;
+
+	case 3:
+
+		win_size = glm::ivec2{ 2560, 1440 };
+		break;
+
+	case 4:
+
+		win_size = glm::ivec2{ 3840, 2160 };
+		break;
+
+	default:
+
+		throw std::exception();
+		break;
+	}
+
+	std::cout << "\nThreads:> ";
+	std::cin >> num_threads;
+	std::cout << std::endl;
+
+	thread_calculator();
 
 	float radius{ 0.1f };
 
@@ -113,7 +232,7 @@ void CPU_overload_test(RayTracer* ray_tracer)
 					(
 						radius, glm::vec3
 						{
-							x_pos, 
+							x_pos,
 							y_pos,
 							z_pos
 						},
@@ -151,6 +270,8 @@ void CPU_overload_test(RayTracer* ray_tracer)
 
 void add_objects(RayTracer* ray_tracer)
 {
+	thread_calculator();
+
 	// Enable shadows
 	ray_tracer->enable_shadows(false);
 
@@ -179,23 +300,8 @@ void add_objects(RayTracer* ray_tracer)
 	ray_tracer->add_object(std::make_shared<Plane>(glm::vec3{ 0.0f, -1.0f, 0.0f }, glm::vec3{ 0.0f, 1.0f, 0.0f }, std::make_shared<Diffuse>(glm::vec3{ 0.75f })));
 }
 
-#undef main
-int main()
+void thread_calculator()
 {
-	srand(time(NULL));
-
-	// Set window size
-	const glm::ivec2 win_size(1240, 720);
-
-	// This will handle rendering to screen
-	GCP_Framework framework;
-
-	// Initialises SDL and OpenGL and sets up a framebuffer
-	if (!framework.Init(win_size))
-	{
-		return -1;
-	}
-
 	while ((unsigned int)win_size.y % num_threads != 0)
 	{
 		++num_threads;
@@ -204,76 +310,35 @@ int main()
 
 		if (num_threads > (unsigned int)win_size.y)
 		{
-			return -1;
+			throw std::exception();
 		}
 	}
+}
 
-	std::vector<std::thread> threads;
+void calculate_and_store_time(std::ofstream& file, const std::string& fileName,
+							  const std::chrono::steady_clock::time_point& time1,
+							  const std::chrono::steady_clock::time_point& time2)
+{
+	// Calculate amount of time in milliseconds
+	std::chrono::milliseconds milliseconds{ std::chrono::duration_cast<std::chrono::milliseconds>(time2 - time1) };
 
-	// Ray tracer
-	RayTracer ray_tracer;
+	// Calculate in seconds
+	float seconds{ (float)milliseconds.count() / 1000.0f };
 
-	//add_objects(&ray_tracer);
-	CPU_overload_test(&ray_tracer);
-	
-	// Camera
-	Camera camera(win_size);
+	// Print amount of time
+	std::cout << "\nTime taken: " << seconds << " seconds\n" << std::endl;
 
-	Cache cache
+	// Open/Create CSV file than can append data
+	file.open(fileName, std::ofstream::out | std::ofstream::app);
+
+	file.seekp(0, std::ios::end);
+
+	if (file.tellp() == 0)
 	{
-		win_size,
-		glm::ivec2{ 0, 0 },
-		glm::ivec2{ win_size.x, win_size.y / num_threads },
-
-		&framework,
-		&ray_tracer,
-		&camera
-	};
-
-	// ---------------------------------Start timer------------------------------------------
-	std::chrono::steady_clock::time_point time1{ std::chrono::high_resolution_clock::now() };
-
-	for (unsigned int i{ 0 }; i < num_threads; ++i)
-	{
-		threads.push_back(std::thread(RTrenderer, cache));
-
-		cache.start.y = cache.end.y;
-		cache.end.y += win_size.y / num_threads;
+		file << "Threads, Seconds\n";
 	}
 
-	std::vector<std::thread>::iterator itr;
-	for (itr = threads.begin(); itr != threads.end(); ++itr)
-	{
-		itr->join();
-	}
+	file << num_threads << ',' << seconds << '\n';
 
-	std::chrono::steady_clock::time_point time2{ std::chrono::high_resolution_clock::now() };
-	// ---------------------------------End timer--------------------------------------------
-
-	std::ofstream file;
-
-	// Check if the compiler is in debug mode
-	// 
-	// Since it takes longer to run a program when it is in debug mode
-	// it would be very useful to ensure that there are two different
-	// files that store the amount of time it has taken to output a
-	// single frame to the screen. This can help determine the optimal
-	// amount of threads needed to output an image
-	//
-	if (debug)
-	{
-		// If it is, then redirect the location in the debug file
-		//calculate_and_store_time(file, "../res/Measurements/Debug/data-" + std::to_string(win_size.y) + "p.csv", time1, time2);
-	}
-	else
-	{
-		// If it is NOT, then redirect the location in the release file
-		//calculate_and_store_time(file, "../res/Measurements/Release/data-" + std::to_string(win_size.y) + "p.csv", time1, time2);
-	}
-
-	// Pushes the framebuffer to OpenGL and renders to screen
-	// Also contains an event loop that keeps the window going until it's closed
-	framework.ShowAndHold();
-
-	return 0;
+	file.close();
 }
