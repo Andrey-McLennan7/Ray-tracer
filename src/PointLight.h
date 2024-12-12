@@ -24,7 +24,7 @@ public:
 	void position(glm::vec3 position);
 	glm::vec3 position() const;
 
-	glm::vec3 direction() const;
+	glm::vec3 direction(const glm::vec3& hit_pos) const;
 
 	void colour(glm::vec3 colour);
 	glm::vec3 colour() const;

@@ -3,8 +3,7 @@
 PointLight::PointLight(float intensity, glm::vec3 position, glm::vec3 colour) :
 	m_intensity{ intensity },
 	m_position{ position },
-	m_colour{ colour },
-	m_direction{ glm::normalize(position) }
+	m_colour{ colour }
 {}
 
 void PointLight::position(glm::vec3 position)
@@ -18,9 +17,9 @@ glm::vec3 PointLight::position() const
 	return this->m_position;
 }
 
-glm::vec3 PointLight::direction() const
+glm::vec3 PointLight::direction(const glm::vec3& hit_pos) const
 {
-	return this->m_direction;
+	return glm::normalize(this->m_position - hit_pos);
 }
 
 void PointLight::colour(glm::vec3 colour)
