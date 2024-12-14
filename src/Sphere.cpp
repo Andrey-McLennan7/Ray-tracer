@@ -10,7 +10,7 @@ Sphere::Sphere(float radius, glm::vec3 position, std::shared_ptr<Material> diff)
 	m_radius{ radius }
 {}
 
-bool Sphere::RayIntersect(const Ray& ray, glm::vec3& intersection) const
+bool Sphere::ray_intersect(const Ray& ray, glm::vec3& intersection) const
 {
 	// Simplify the process of getting the values
 	glm::vec3 a{ ray.m_origin };

@@ -28,7 +28,7 @@ glm::vec3 RayTracer::TraceRay(Ray ray)
 	std::vector<std::shared_ptr<Object>>::iterator o_itr;
 	for (o_itr = this->m_scene_objects.begin(); o_itr != this->m_scene_objects.end(); ++o_itr)
 	{
-		if ((*o_itr)->RayIntersect(ray, intersection))
+		if ((*o_itr)->ray_intersect(ray, intersection))
 		{
 			// If there is an intersection, then first calculate the depth
 			float depth{ glm::length(intersection - ray.m_origin) };
@@ -41,6 +41,7 @@ glm::vec3 RayTracer::TraceRay(Ray ray)
 			// This is too ensure that the closer objects in the scene
 			// have greater priority than the objects (or parts of the
 			// objects) behind them
+			//
 			if (depth < closest_depth)
 			{
 				closest_depth = depth;
@@ -78,7 +79,7 @@ glm::vec3 RayTracer::TraceRay(Ray ray)
 				Ray shadow_ray{ closest_intersection, glm::normalize((*l_itr)->position() - closest_intersection) };
 
 				// Detect any intersection between the shadow ray and the light source(s)
-				if ((*o_itr)->RayIntersect(shadow_ray, shadow_intersection))
+				if ((*o_itr)->ray_intersect(shadow_ray, shadow_intersection))
 				{
 					// If there is an intersection, then detect if any of the objects are not too close to the light sources(s)
 					if ((glm::length(shadow_intersection - closest_intersection) < glm::length((*l_itr)->position() - closest_intersection)))

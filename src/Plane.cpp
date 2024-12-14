@@ -9,7 +9,7 @@ Plane::Plane(glm::vec3 position, glm::vec3 normal, std::shared_ptr<Material> dif
 	m_normal{ normal }
 {}
 
-bool Plane::RayIntersect(const Ray& ray, glm::vec3& intersection) const
+bool Plane::ray_intersect(const Ray& ray, glm::vec3& intersection) const
 {
 	// Simplify the process of getting the values
 	glm::vec3 a{ ray.m_origin };
