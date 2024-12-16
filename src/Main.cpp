@@ -9,7 +9,6 @@
 #include "PBR.h"
 #include "Ray.h"
 
-// Utility funcitions headers
 #include "random_floats.h"
 
 // Standard library headers
@@ -42,10 +41,10 @@ struct Cache
 glm::ivec2 win_size(1240, 720);
 
 // Set threads
-unsigned int num_threads{ 6 };
+unsigned int num_threads{ 8 };
 
 // Utility functions
-void rt_renderer(Cache cache);
+void rt_renderer(const Cache& cache);
 
 void CPU_overload_test(RayTracer* ray_tracer);
 void add_objects(RayTracer* ray_tracer);
@@ -76,7 +75,7 @@ int main()
 	}
 	
 	// Camera
-	Camera camera(win_size, 90.0f);
+	Camera camera(win_size, 45.0f, glm::vec3{ 0.0f, 0.0f, -1.5f });
 
 	Cache cache
 	{
@@ -89,23 +88,23 @@ int main()
 		&camera
 	};
 
-	std::vector<std::thread> threads;
+	std::vector<std::shared_ptr<std::thread>> threads;
 
 	// ---------------------------------Start timer------------------------------------------
 	std::chrono::steady_clock::time_point time1{ std::chrono::high_resolution_clock::now() };
 
 	for (unsigned int i{ 0 }; i < num_threads; ++i)
 	{
-		threads.push_back(std::thread(rt_renderer, cache));
+		threads.push_back(std::make_shared<std::thread>(rt_renderer, cache));
 
 		cache.start.y = cache.end.y;
 		cache.end.y += win_size.y / num_threads;
 	}
 
-	std::vector<std::thread>::iterator itr;
+	std::vector<std::shared_ptr<std::thread>>::iterator itr;
 	for (itr = threads.begin(); itr != threads.end(); ++itr)
 	{
-		itr->join();
+		(*itr)->join();
 	}
 
 	std::chrono::steady_clock::time_point time2{ std::chrono::high_resolution_clock::now() };
@@ -139,7 +138,7 @@ int main()
 	return 0;
 }
 
-void rt_renderer(Cache cache)
+void rt_renderer(const Cache& cache)
 {
 	// Iterate through every x coordinate
 	for (int x{ cache.start.x }; x < cache.end.x; ++x)
@@ -148,9 +147,9 @@ void rt_renderer(Cache cache)
 		for (int y{ cache.start.y }; y < cache.end.y; ++y)
 		{
 			glm::ivec2 pixel_pos{ x, y };
-			glm::vec3 pixel_colour{ 0 };
+			glm::vec3 pixel_colour{ 0.0f };
 
-			int samples{ 5 };
+			int samples{ 8 };
 
 			// Calculate anti-aliasing
 			for (int i = 0; i < samples; i++)
@@ -279,7 +278,7 @@ void add_objects(RayTracer* ray_tracer)
 	std::vector<std::shared_ptr<PointLight>> point_lights;
 
 	point_lights.push_back(std::make_shared<PointLight>(1.0f, glm::vec3{ 0.0f, 1.0f, 1.0f }));
-	point_lights.push_back(std::make_shared<PointLight>(0.5f, glm::vec3{ 0.0f, 1.0f, -1.0f }));
+	point_lights.push_back(std::make_shared<PointLight>(0.5f, glm::vec3{ 0.0f, 1.0f, -4.0f }));
 
 	// Add point lights to the scene
 	std::vector<std::shared_ptr<PointLight>>::const_iterator itr;
@@ -290,10 +289,10 @@ void add_objects(RayTracer* ray_tracer)
 
 	// Create sphere object(s)
 	//std::shared_ptr<Sphere> red_sphere{ std::make_shared<Sphere>(0.5f, glm::vec3{ 0.0f, -0.5f, -1.0f }, std::make_shared<PBR>(0.5f, 1.0f, 0.5f, glm::vec3{ 0.8f, 0.2f, 0.1f })) };
-	std::shared_ptr<Sphere> sphere1{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.7f,  0.0f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
-	std::shared_ptr<Sphere> sphere2{ std::make_shared<Sphere>(0.5f, glm::vec3{ -0.7f,  0.0f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
-	std::shared_ptr<Sphere> sphere3{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f,  0.7f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
-	std::shared_ptr<Sphere> sphere4{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f, -0.7f, -2.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere1{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.7f,  0.2f, -3.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere2{ std::make_shared<Sphere>(0.5f, glm::vec3{ -0.7f,  0.2f, -3.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere3{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f,  0.9f, -3.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
+	std::shared_ptr<Sphere> sphere4{ std::make_shared<Sphere>(0.5f, glm::vec3{  0.0f, -0.5f, -3.0f }, std::make_shared<Diffuse>(glm::vec3{ random_float(), random_float(), random_float() })) };
 
 	sphere1->add_material(std::make_shared<Specular>(50.0f));
 	sphere2->add_material(std::make_shared<Specular>(50.0f));
