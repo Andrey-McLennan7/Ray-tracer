@@ -41,7 +41,7 @@ struct Cache
 glm::ivec2 win_size(1240, 720);
 
 // Set threads
-unsigned int num_threads{ 8 };
+unsigned int num_threads{ 16 };
 
 // Utility functions
 void rt_renderer(const Cache& cache);
@@ -75,7 +75,7 @@ int main()
 	}
 	
 	// Camera
-	Camera camera(win_size, 45.0f, glm::vec3{ 0.0f, 0.0f, -1.5f });
+	Camera camera(win_size, 45.0f, glm::vec3{ 0.0f, 0.0f, -3.0f });
 
 	Cache cache
 	{
